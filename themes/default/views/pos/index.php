@@ -357,7 +357,10 @@
                                                     <tr class="info">
                                                         <td width="25%"><a href="#" id="add_discount"><?=lang('discount')?></a></td>
                                                         <td class="text-right" style="padding-right:10px;"><span id="ds_con">0</span></td>
-                                                        <td width="25%"><a href="#" id="add_tax"><?=lang('order_tax')?></a> <a href="#" id="text_tax" ></a>    </td>
+                                                        <td width="25%">
+                                                            <a href="#" id="add_tax"><?=lang('order_tax')?></a>
+                                                            <a href="#" id="text_tax" ></a>
+                                                        </td>
                                                         <td class="text-right"><span id="ts_con">0</span></td>
                                                     </tr>
                                                     <tr class="success">

@@ -474,6 +474,9 @@ class Pos_model extends CI_Model
         if ($category_id) {
            $this->db->where('category_id', $category_id);
         }
+        
+        $this->db->where('category_id != 7');
+
         $this->db->order_by("code", "asc");
         
         $query = $this->db->get("products");
@@ -1372,55 +1375,22 @@ class Pos_model extends CI_Model
         }
     }
 
-    public function nube_serie($tipo, $tipoDocAfectado="", $tienda=0){
+    public function nube_serie($tipo, $tipoDocAfectado="", $tienda=1){
 
         //die("Tienda:".gettype($tienda). " - ".$tienda);
 
-        if($tienda * 1 == 2){
-            if($tipo == "Boleta"){
-                return "BBB1"; // BOLETA DE VENTA B003 - 00002471 08/11/2021 
-            }elseif($tipo == "Factura"){
-                return "FFF1"; // Nº FACTURA F002 - 00000022 07/11/2021
-            }elseif($tipo == 'Ticket'){
-                return "TK1";
-            }else{
-                if(strlen($tipoDocAfectado) > 0){
-                    if($tipoDocAfectado == '1'){ return "FFF1"; } // FFF1
-                    if($tipoDocAfectado == '2'){ return "BBB1"; } // BBB1
-                }                
-            }
+        if($tipo == "Boleta"){
+            return "BBB" . $tienda; // BOLETA DE VENTA B003 - 00002471 08/11/2021 
+        }elseif($tipo == "Factura"){
+            return "FFF" . $tienda; // Nº FACTURA F002 - 00000022 07/11/2021
+        }elseif($tipo == 'Ticket'){
+            return "TK" . $tienda;
+        }else{
+            if(strlen($tipoDocAfectado) > 0){
+                if($tipoDocAfectado == '1'){ return "FFF".$tienda; } // FFF1
+                if($tipoDocAfectado == '2'){ return "BBB".$tienda; } // BBB1
+            }                
         }
-
-        if($tienda * 1 == 3){
-            if($tipo == "Boleta"){
-                return "BBB2"; // BOLETA DE VENTA B003 - 00002471 08/11/2021 
-            }elseif($tipo == "Factura"){
-                return "FFF2"; // Nº FACTURA F002 - 00000022 07/11/2021
-            }elseif($tipo == 'Ticket'){
-                return "TK2";
-            }else{
-                if(strlen($tipoDocAfectado) > 0){
-                    if($tipoDocAfectado == '1'){ return "FFF2"; } // FFF1
-                    if($tipoDocAfectado == '2'){ return "BBB2"; } // BBB1
-                }                
-            }
-        }
-
-        if($tienda * 1 == 1){
-            if($tipo == "Boleta"){
-                return "BBB3"; // BOLETA DE VENTA B003 - 00002471 08/11/2021 
-            }elseif($tipo == "Factura"){
-                return "FFF3"; // Nº FACTURA F002 - 00000022 07/11/2021
-            }elseif($tipo == 'Ticket'){
-                return "TK3";
-            }else{
-                if(strlen($tipoDocAfectado) > 0){
-                    if($tipoDocAfectado == '1'){ return "FFF3"; } // FFF1
-                    if($tipoDocAfectado == '2'){ return "BBB3"; } // BBB1
-                }                
-            }
-        }
-
     }
 
     public function nube_consultas($tipo_comprobante, $serie, $numero){

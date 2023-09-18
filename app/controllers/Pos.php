@@ -747,7 +747,7 @@ class Pos extends MY_Controller {
             
             $combo_items = FALSE;
 
-            $cSql = "select a.store_id, a.quantity, a.price/1.10 price, a.price store_price, a.product_id, b.code, b.name, b.category_id, b.tax, b.cost, b.tax_method, b.alert_quantity, b.unidad, b.inventariable, b.rubro, b.details, b.`type` 
+            $cSql = "select a.store_id, a.quantity, a.price/(1+(b.tax/100)) price, a.price store_price, a.product_id, b.code, b.name, b.category_id, b.tax, b.cost, b.tax_method, b.alert_quantity, b.unidad, b.inventariable, b.rubro, b.details, b.`type` 
                 from tec_product_store_entes a
                 inner join tec_products b on a.product_id=b.id
                 where b.code = '$code' and a.store_id = $store_id and (a.tipo_id = '$tipo' or a.tipo_id = '1') order by a.tipo_id desc limit 1";
@@ -786,10 +786,10 @@ class Pos extends MY_Controller {
                 
                 // codigo por fmz:
                 $product->real_unit_price   = $product->store_price;
-                //$product->unit_price        = $product->tax ? $product->store_price/(1+($product->tax/100)) : $product->store_price;
+                $product->unit_price        = $product->tax ? $product->store_price/(1+($product->tax/100)) : $product->store_price;
                 
                 // Codigo encontrado:
-                $product->unit_price          = $product->tax ? ($product->price+(($product->price*$product->tax)/100)) : $product->price;
+                //$product->unit_price          = $product->tax ? ($product->price+(($product->price*$product->tax)/100)) : $product->price;
                 //$product->unit_price        = $product->tax ? ($product->price+(($product->price*$product->tax)/100)) : $product->price;
                 
                 if ($product->type == 'combo') {
@@ -1097,9 +1097,21 @@ class Pos extends MY_Controller {
 
     function ajaxproducts( $category_id = NULL, $return = NULL) {
 
-        if($this->input->get('category_id')) { $category_id = $this->input->get('category_id'); } elseif(!$category_id) { $category_id = $this->Settings->default_category; }
-        if($this->input->get('per_page') == 'n' ) { $page = 0; } else { $page = $this->input->get('per_page'); }
-        if($this->input->get('tcp') == 1 ) { $tcp = TRUE; } else { $tcp = FALSE; }
+        if($this->input->get('category_id')){ 
+            $category_id = $this->input->get('category_id'); 
+        }elseif(!$category_id){ 
+            $category_id = $this->Settings->default_category; 
+        }
+        if($this->input->get('per_page') == 'n' ){ 
+            $page = 0; 
+        } else { 
+            $page = $this->input->get('per_page'); 
+        }
+        if($this->input->get('tcp') == 1 ){ 
+            $tcp = TRUE; 
+        } else { 
+            $tcp = FALSE; 
+        }
 
         $products = $this->pos_model->fetch_products($category_id, $this->Settings->pro_limit, $page);
         $pro = 1;
@@ -1977,10 +1989,24 @@ class Pos extends MY_Controller {
 
     function anular_doc(){
         $sale_id = $_REQUEST["id"];
-        $this->db->where('id',$sale_id)->delete('sales');
-        $this->db->where('sale_id',$sale_id)->delete('payments');
+        
+        //$this->db->where('id',$sale_id)->delete('sales');
+        //$this->db->where('sale_id',$sale_id)->delete('payments');
+        
+        $ar = array();
         $ar["rpta"] = "OK";
-        $ar["mensaje"] = "Se elimina correctamente la Venta";
+        $ar["mensaje"] = "Se anula correctamente la Venta";
+        
+        $rpta_sunat = $this->pos_model_apisperu->enviar_anulacion($sale_id);
+
+        $this->db->set("grand_total",0);
+        $this->db->set("paid",0);
+        $this->db->where("id",$sale_id);
+        $this->db->update("sales");
+
+        $this->db->where("sale_id",$sale_id);
+        $this->db->delete("payments");        
+
         echo json_encode($ar);
     }
 

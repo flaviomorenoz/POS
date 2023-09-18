@@ -152,10 +152,11 @@ class Sales extends MY_Controller {
 
 
     function delete($id = NULL) {
+        /*
         if(DEMO) {
             $this->session->set_flashdata('error', lang('disabled_in_demo'));
             redirect(isset($_SERVER["HTTP_REFERER"]) ? $_SERVER["HTTP_REFERER"] : 'welcome');
-        }
+        }*/
 
         if($this->input->get('id')){ $id = $this->input->get('id'); }
 

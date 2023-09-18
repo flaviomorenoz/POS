@@ -1,4 +1,4 @@
-var Igv = 10;
+var Igv = 18;
 
 function exponer(deb){
     spositems = JSON.parse(get('spositems'));
@@ -59,6 +59,7 @@ function cambiar_precios2(){
 
 function loadItems() {
     console.log("Inicio loadItems")
+    
     if (count == 1) {
         spositems = {};
     }
@@ -324,9 +325,17 @@ function loadItems() {
         //console.log("order_tax:"+order_tax)
 
         //if(ts.indexOf("%") !== -1) {
-            var pts = ts.split("%");
-            order_tax = ((total-order_discount)*parseFloat(pts[0]))/100;
-            //console.log("order_tax despues del calculo:"+order_tax)
+        var pts = ts.split("%");
+        
+        //order_tax = ((total-order_discount)*parseFloat(pts[0]))/100;
+        order_tax = ((total-order_discount)*parseFloat(Igv))/100;
+
+        //console.log("--------------")
+        //console.log("total : "+total)
+        //console.log("order_discount : "+order_discount)
+        //console.log("pts[0] : "+pts[0])
+        //console.log("order_tax : "+order_tax)
+        //console.log("--------------") 
         //}
 
         var g_total = total - parseFloat(order_discount) + parseFloat(order_tax);

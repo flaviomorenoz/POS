@@ -1,3 +1,5 @@
 vendor
 log
 uploads
+app/config/database.php
+comprobantes

@@ -122,3 +122,14 @@ if ( ! function_exists('word_wrap')) {
         return $output;
     }
 }
+
+if ( ! function_exists('traza')) {
+    function traza($msg){
+        $nombre_file = "traza.txt";
+        $gestor = fopen($nombre_file,"a+");
+        $msg .= "\n";
+        fputs($gestor,$msg);
+        fclose($gestor);
+    }
+
+}

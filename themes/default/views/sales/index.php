@@ -384,19 +384,21 @@ if(!isset($metodo)){ $metodo = "";}
             })
         }
     }*/
-
+    
     function anular_doc(id){
-        var respeta = confirm("Confirma que desea Elimanar?")
+        var respeta = confirm("Confirma que desea Eliminar?")
 
         if(respeta){
             $.ajax({
-                data:{id:id},
-                url:'<?= base_url('pos_model_apisperu/enviar_anulacion/') ?>' + id,
+                data: {id:id},
+                url:'<?= base_url('pos/anular_doc') ?>',
                 type:'get',
                 success:function(res){
-                    //var respuesta = JSON.parse(res)
-                    if(res != 'KO'){
-                        alert(respuesta.mensaje)    
+                    console.log(res)
+                    var ar_res = JSON.parse(res)
+                    console.log(ar_res)
+                    if(ar_res.rpta == 'OK'){
+                        alert(ar_res.mensaje)    
                     }else{
                         alert("Hubo un inconveniente...no se pudo borrar")
                     }
@@ -409,6 +411,6 @@ if(!isset($metodo)){ $metodo = "";}
             })
         }
     }
-
+    
 </script>
 

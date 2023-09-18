@@ -10,8 +10,6 @@ class Pos_model_apisperu extends CI_Model
 
     public function addSale($data, $items, $payment = array(), $did = NULL) {
 
-        $this->fm->traza("ADDSALE-APISPERU");
-
         $this->db->where('serie',$data['serie']);
         $this->db->where('correlativo',$data['correlativo']);
         $query = $this->db->get('sales');
@@ -24,8 +22,6 @@ class Pos_model_apisperu extends CI_Model
         if ($n==0){
             $this->db->trans_begin();
             $bandera_valida = true;
-
-            //$this->db->insert('sales', $data);
 
             if($this->db->insert('sales', $data)){
     
@@ -88,9 +84,10 @@ class Pos_model_apisperu extends CI_Model
                 $this->el_json  = "";
      
                 // ****************************************************
-                $this->enviar_doc_sunat($sale_id, $data, $items);
+                if ($this->enviar_doc_sunat($sale_id, $data, $items, "ENVIO")){
+                    $this->enviar_doc_sunat($sale_id, $data, $items, "XML");
+                }
                 // ****************************************************
-                
                 
             }
 
@@ -106,7 +103,7 @@ class Pos_model_apisperu extends CI_Model
     }
 
 
-    public function enviar_doc_sunat($sale_id, $data, $items){  // IMPLEMENTACION DE APISPERU
+    public function enviar_doc_sunat($sale_id, $data, $items, $tipo_envio){  // IMPLEMENTACION DE APISPERU
 
         // Token que sale del Loguin de la Empresa.
         $cToken = "Bearer ";
@@ -224,7 +221,6 @@ class Pos_model_apisperu extends CI_Model
                 }
               },";
 
-
             $campos .= "\"company\": {
                 \"ruc\": $this->COMPANY_RUC,
                 \"razonSocial\": \"$this->COMPANY_RAZON_SOCIAL\",
@@ -305,39 +301,67 @@ class Pos_model_apisperu extends CI_Model
               ]
             }";
 
-            $url = "https://facturacion.apisperu.com/api/v1/invoice/send";
+            if($tipo_envio == 'ENVIO'){
+                $url = "https://facturacion.apisperu.com/api/v1/invoice/send";
+            }
+
+            if($tipo_envio == 'XML'){
+                $url = "https://facturacion.apisperu.com/api/v1/invoice/xml";
+            }            
 
         }
 
         /*elseif($tipo_documento == 'Nota_de_credito' || $tipo_documento == 'Nota_de_debito'){
-
             $campos = $this->Notas_varias($sale_id);
-
             $url = "https://facturacion.apisperu.com/api/v1/note/send";
         }
         */
 
-        $nombre_file    = "ultimo.txt";
-        $gestor         = fopen($nombre_file,"w");
-        fputs($gestor, $campos);
-        fclose($gestor);
-        
         // ***********************************
         $rpta_sunat = $this->rulo($campos, $cToken, $url);
         // ***********************************
         
+        // *********************************************************
         $rpta_analizada = $this->analizar_rpta_sunat($rpta_sunat);
+        // *********************************************************
+
+        $cSale_id = substr("0000000".$sale_id,-7);
+
 
         // Guarda la respuesta:
-        if($rpta_analizada){
-            $cSql = "update tec_sales set envio_electronico=1 where id = ?";
-            $this->db->query($cSql, array($sale_id));
+        if ($tipo_envio == 'ENVIO'){
+
+            $gn = fopen("comprobantes/doc_{$cSale_id}_campos.txt","w");
+            fputs($gn, $campos);
+            fclose($gn);
+            $gn = null;
+
+            if($rpta_analizada){
+
+                $gn = fopen("comprobantes/doc_{$cSale_id}_rpta.txt","w");
+                fputs($gn, $rpta_sunat);
+                fclose($gn);
+                $gn = null;
+
+                $cSql = "update tec_sales set envio_electronico=1 where id = ?";
+                $this->db->query($cSql, array($sale_id));
+                return true;
+
+            }else{
+                traza($rpta_sunat);
+                return false;
+            }
+
         }
 
-        if ($rpta_analizada){
+        if ($tipo_envio == 'XML'){
+            //traza("En envio XML...");
+            $gn = fopen("comprobantes/doc_{$cSale_id}_xml.txt","w");
+            fputs($gn, $rpta_sunat);
+            fclose($gn);
+            $gn = null;
+
             return true;
-        }else{
-            return false;
         }
 
     }
@@ -360,8 +384,8 @@ class Pos_model_apisperu extends CI_Model
             )
         );
 
-        //$response = curl_exec($curl);
-        $response = "Bloqueado por el momento";
+        $response = curl_exec($curl);
+        //$response = "Bloqueado por el momento";
 
         curl_close($curl);
 
@@ -513,6 +537,7 @@ class Pos_model_apisperu extends CI_Model
 */
     function enviar_anulacion($id){
 
+        traza("id:".$id);
         /*
         $result = $this->db->select("b.codigo_sunat tipoDoc, a.date, a.serie, a.correlativo, a.store_id")
             ->from("tec_sales a")
@@ -520,16 +545,16 @@ class Pos_model_apisperu extends CI_Model
             ->where("a.id",$id)->get()->result();
         */
 
-        $result = $this->db->select("tec_sales.tipoDoc, tec_sales.date, tec_sales.serie, tec_sales.correlativo, tec_sales.store_id");
-        $this->db->where("tec_sales.id", $id)->get()->result();
+        $result = $this->db->select("tec_sales.tipoDoc, tec_sales.date, tec_sales.serie, tec_sales.correlativo, tec_sales.store_id")
+            ->where("tec_sales.id", $id)->get("tec_sales")->result();
         foreach($result as $r){
             $tipo_documento = $r->tipoDoc; // 1 Factura, 2 Boleta
             
             if($r->tipoDoc == "Boleta"){
-                $tipo_documento = 2;
+                $tipo_documento = "03";
             }else{
                 if($r->tipoDoc == "Factura"){
-                    $tipo_documento = 1;    
+                    $tipo_documento = "01";    
                 }else{
                     echo "KO";
                 }
@@ -548,6 +573,8 @@ class Pos_model_apisperu extends CI_Model
         $result     = $this->db->select("code, city, state, ubigeo, address1, address2, address2 nombre_empresa, code ruc")
                     ->where("id",$store_id)->get("tec_stores")->result_array();
         
+        traza("store_id:".$store_id);
+
         foreach($result as $r){
             $this->COMPANY_DIRECCION      = $r["address1"]; 
             $this->COMPANY_PROV           = $r["city"];
@@ -560,7 +587,7 @@ class Pos_model_apisperu extends CI_Model
 
         $campus2 = 
             "\"company\": {".
-            "    \"ruc\":\"" . $this->COMPANY_RUC . '",' .
+            "    \"ruc\":" . $this->COMPANY_RUC . ',' .
                 "\"razonSocial\":\"" .  $this->COMPANY_RAZON_SOCIAL . '",' .
                 "\"address\": {".
                     "\"direccion\": \"" . $this->COMPANY_DIRECCION . '",'.
@@ -589,24 +616,65 @@ class Pos_model_apisperu extends CI_Model
         $cad .= '  ]';
         $cad .= '} '; 
 
-        $datos = $cad;
+        $campos = $cad;
+        //traza($campos);
+/*
+$campos = '{  "correlativo": "1",  "fecGeneracion": "2023-09-11T21:39:11-05:00",  "fecComunicacion": "2023-09-11T00:00:00-05:00","company": {    
+    "ruc":10078611834,
+    "razonSocial":"LA SERNA FERNANDEZ AIDA MILAGRITOS",
+    "nombreComercial":"CAFAI",
+    "address": {"direccion": "Calle Doña Virginia 136, urb La Castellana, Surco","provincia": "Lima","departamento": "LIMA","distrito": "Surco","ubigueo": "150140"}},  "details": [    {      "tipoDoc": "03",      "serie": "BBB3",      "correlativo": "6",      "desMotivoBaja": "ERROR EN CÁLCULOS"    }  ]}';        
 
-        //echo $datos . "<br><br>";
+$campos = '{
+"correlativo": "00111",
+"fecGeneracion": "2021-01-27T00:00:00-05:00",
+"fecComunicacion": "2021-01-29T00:00:00-05:00",
+"company": {
+"ruc": 10078611834,
+"razonSocial": "LA SERNA FERNANDEZ AIDA MILAGRITOS",
+"nombreComercial": "Mi empresa",
+"address": {
+"direccion": "Calle Doña Virginia 136, urb La Castellana, Surco",
+"provincia": "LIMA",
+"departamento": "LIMA",
+"distrito": "Surco",
+"ubigueo": "150140"
+}
+},
+"details": [
+{
+"tipoDoc": "03",
+"serie": "B001",
+"correlativo": "02132132",
+"desMotivoBaja": "ERROR EN CÁLCULOS"
+}
+]
+}';*/
 
         $url = "https://facturacion.apisperu.com/api/v1/voided/send";
+
+        // Token que sale del Loguin de la Empresa.
+        $cToken = "Bearer ";
+
+        $result = $this->db->select("dato")->where("name","TOKEN")->get("variables")->result();
+        foreach($result as $r){
+            $cToken .= $r->dato;
+        }
 
         // ***********************************
         $respuesta = $this->rulo($campos, $cToken, $url);
         // ***********************************
         //$respuesta = $this->rulo($url, $datos);
         
+        $cSale_id = substr("0000000".$id,-7);        
+
         $gn             = null;
-        $nombre_file    = "comprobantes/doc_{$id}_anulacion.txt";
+        $nombre_file    = "comprobantes/doc_{$cSale_id}_anulacion.txt";
         $gn             = fopen($nombre_file,"w");
         fputs($gn, $respuesta);
         fclose($gn);
 
-        echo $respuesta;
+        return $respuesta;
     }
 
     function analizar_rpta_sunat($bloque){
