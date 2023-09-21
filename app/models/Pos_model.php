@@ -1375,6 +1375,24 @@ class Pos_model extends CI_Model
         }
     }
 
+    /*public function nube_serie($tipo, $tipoDocAfectado="", $tienda=1){
+
+        //die("Tienda:".gettype($tienda). " - ".$tienda);
+
+        if($tipo == "Boleta"){
+            return "BBB" . $tienda; // BOLETA DE VENTA B003 - 00002471 08/11/2021 
+        }elseif($tipo == "Factura"){
+            return "FFF" . $tienda; // Nº FACTURA F002 - 00000022 07/11/2021
+        }elseif($tipo == 'Ticket'){
+            return "TK" . $tienda;
+        }else{
+            if(strlen($tipoDocAfectado) > 0){
+                if($tipoDocAfectado == '1'){ return "FFF".$tienda; } // FFF1
+                if($tipoDocAfectado == '2'){ return "BBB".$tienda; } // BBB1
+            }                
+        }
+    }*/
+
     public function nube_serie($tipo, $tipoDocAfectado="", $tienda=1){
 
         //die("Tienda:".gettype($tienda). " - ".$tienda);
